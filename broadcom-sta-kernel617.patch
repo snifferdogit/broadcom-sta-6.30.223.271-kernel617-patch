@@ -1,0 +1,1001 @@
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/dkms.conf /usr/src/broadcom-sta-6.30.223.271/dkms.conf
+--- /usr/src/broadcom-sta-6.30.223.271.bak/dkms.conf	2026-04-16 21:55:53.976454766 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/dkms.conf	2026-04-16 23:54:18.037319059 +0100
+@@ -1,6 +1,6 @@
+ PACKAGE_NAME="broadcom-sta"
+ PACKAGE_VERSION="6.30.223.271"
+-MAKE[0]="make KVER=$kernelver"
++MAKE[0]="cp /usr/src/broadcom-sta-6.30.223.271/lib/wlc_hybrid.o_amd64 lib/wlc_hybrid.o && touch lib/.wlc_hybrid.o.cmd && make KVER=$kernelver"
+ BUILT_MODULE_NAME[0]="wl"
+ DEST_MODULE_LOCATION[0]="/updates/dkms"
+ AUTOINSTALL="YES"
+Binary files /usr/src/broadcom-sta-6.30.223.271.bak/lib/wlc_hybrid.o and /usr/src/broadcom-sta-6.30.223.271/lib/wlc_hybrid.o differ
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/Makefile /usr/src/broadcom-sta-6.30.223.271/Makefile
+--- /usr/src/broadcom-sta-6.30.223.271.bak/Makefile	2026-04-16 21:55:53.976398701 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/Makefile	2026-04-17 01:04:27.664971548 +0100
+@@ -123,7 +123,8 @@
+ GCCVERSION := $(shell expr `echo $(GCCVERSION)` | cut -b1-3)
+ GE_49 := $(shell expr `echo $(GCCVERSION)` \>= 490)
+ 
+-EXTRA_CFLAGS :=
++EXTRA_CFLAGS := -DUSE_CFG80211 -DUSE_IW
++ccflags-y += -DUSE_CFG80211 -DUSE_IW
+ 
+ ifeq ($(APIFINAL),CFG80211)
+   EXTRA_CFLAGS += -DUSE_CFG80211
+@@ -143,12 +144,12 @@
+ wl-objs            += src/wl/sys/wl_iw.o
+ wl-objs            += src/wl/sys/wl_cfg80211_hybrid.o
+ 
+-EXTRA_CFLAGS       += -I$(src)/src/include -I$(src)/src/common/include
++EXTRA_CFLAGS += -I$(src)/src/include -I$(src)/src/common/include -I/usr/src/broadcom-sta-6.30.223.271/src/include
+ EXTRA_CFLAGS       += -I$(src)/src/wl/sys -I$(src)/src/wl/phy -I$(src)/src/wl/ppr/include
+ EXTRA_CFLAGS       += -I$(src)/src/shared/bcmwifi/include
+ #EXTRA_CFLAGS       += -DBCMDBG_ASSERT -DBCMDBG_ERR
+ ifeq "$(GE_49)" "1"
+-EXTRA_CFLAGS       += -Wno-date-time
++EXTRA_CFLAGS       += -Wno-date-time -Wno-implicit-fallthrough -Wno-error
+ endif
+ 
+ # Look for kernel architecture.
+@@ -168,10 +169,12 @@
+     endif
+ endif
+ 
+-EXTRA_LDFLAGS      := $(src)/lib/$(SHIPPED)
++EXTRA_LDFLAGS      :=
++wl-objs            += lib/wlc_hybrid.o
+ 
+ KVER               ?= $(shell uname -r)
+ KBASE              ?= /lib/modules/$(KVER)
++
+ KBUILD_DIR         ?= $(KBASE)/build
+ MDEST_DIR          ?= $(KBASE)/kernel/drivers/net/wireless
+ 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/pre-build.sh /usr/src/broadcom-sta-6.30.223.271/pre-build.sh
+--- /usr/src/broadcom-sta-6.30.223.271.bak/pre-build.sh	1970-01-01 01:00:00.000000000 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/pre-build.sh	2026-04-16 22:51:35.880284309 +0100
+@@ -0,0 +1,3 @@
++#!/bin/bash
++cp /usr/src/broadcom-sta-6.30.223.271/lib/wlc_hybrid.o_amd64 \
++   /usr/src/broadcom-sta-6.30.223.271/lib/wlc_hybrid.o
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/802.11.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.11.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/802.11.h	2026-04-16 21:55:53.983967212 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.11.h	2026-04-16 22:32:28.217968045 +0100
+@@ -22,16 +22,16 @@
+ #define _802_11_H_
+ 
+ #ifndef _TYPEDEFS_H_
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ #endif
+ 
+ #ifndef _NET_ETHERNET_H_
+-#include <proto/ethernet.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
+ #endif
+ 
+-#include <proto/wpa.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/wpa.h"
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define DOT11_TU_TO_US			1024	
+ 
+@@ -3076,6 +3076,6 @@
+ #define G3PP_GUD_VERSION		0
+ #define G3PP_PLMN_LIST_IE		0
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmeth.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmeth.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmeth.h	2026-04-16 21:55:53.984064305 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmeth.h	2026-04-16 22:32:28.217769448 +0100
+@@ -22,10 +22,10 @@
+ #define _BCMETH_H_
+ 
+ #ifndef _TYPEDEFS_H_
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ #endif
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define	BCMILCP_SUBTYPE_RATE		1
+ #define	BCMILCP_SUBTYPE_LINK		2
+@@ -57,6 +57,6 @@
+ 	uint16	usr_subtype;
+ } BWL_POST_PACKED_STRUCT bcmeth_hdr_t;
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif	
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmevent.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmevent.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmevent.h	2026-04-16 21:55:53.984089751 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmevent.h	2026-04-16 22:32:28.217610364 +0100
+@@ -25,12 +25,12 @@
+ #define _BCMEVENT_H_
+ 
+ #ifndef _TYPEDEFS_H_
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ #endif
+ 
+-#include <proto/bcmeth.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmeth.h"
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define BCM_EVENT_MSG_VERSION		2	
+ #define BCM_MSG_IFNAME_MAX		16	
+@@ -338,6 +338,6 @@
+ #define WLC_E_PROXD_FOUND	1	
+ #define WLC_E_PROXD_GONE	2	
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmip.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmip.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/bcmip.h	2026-04-16 21:55:53.984121138 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmip.h	2026-04-16 22:32:28.217861568 +0100
+@@ -22,10 +22,10 @@
+ #define _bcmip_h_
+ 
+ #ifndef _TYPEDEFS_H_
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ #endif
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define IP_VER_OFFSET		0x0	
+ #define IP_VER_MASK		0xf0	
+@@ -191,6 +191,6 @@
+ 
+ #define IPV4_ISMULTI(a) (((a) & 0xf0000000) == 0xe0000000)
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif	
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/ethernet.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/ethernet.h	2026-04-16 21:55:53.984149409 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h	2026-04-16 22:32:28.217508827 +0100
+@@ -22,10 +22,10 @@
+ #define _NET_ETHERNET_H_
+ 
+ #ifndef _TYPEDEFS_H_
+-#include "typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ #endif
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define	ETHER_ADDR_LEN		6
+ 
+@@ -151,6 +151,6 @@
+ 
+ #define  ETHER_ISUCAST(ea) ((((uint8 *)(ea))[0] & 0x01) == 0)
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/wpa.h /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/wpa.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/common/include/proto/wpa.h	2026-04-16 21:55:53.984205790 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/wpa.h	2026-04-16 22:32:28.217410914 +0100
+@@ -21,10 +21,10 @@
+ #ifndef _proto_wpa_h_
+ #define _proto_wpa_h_
+ 
+-#include <typedefs.h>
+-#include <proto/ethernet.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define DOT11_RC_INVALID_WPA_IE		13	
+ #define DOT11_RC_MIC_FAILURE		14	
+@@ -143,6 +143,6 @@
+ 
+ #define WPA2_PMKID_COUNT_LEN	2
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ #endif 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmcrypto/tkhash.h /usr/src/broadcom-sta-6.30.223.271/src/include/bcmcrypto/tkhash.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmcrypto/tkhash.h	2026-04-16 21:55:53.984577587 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/bcmcrypto/tkhash.h	2026-04-16 22:32:28.216041766 +0100
+@@ -22,7 +22,7 @@
+ #ifndef _TKHASH_H_
+ #define _TKHASH_H_
+ 
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ 
+ #define TKHASH_P1_KEY_SIZE	10	
+ #define TKHASH_P2_KEY_SIZE	16	
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmendian.h /usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmendian.h	2026-04-16 21:55:53.984631077 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h	2026-04-16 22:32:28.216749564 +0100
+@@ -24,7 +24,7 @@
+ #ifndef _BCMENDIAN_H_
+ #define _BCMENDIAN_H_
+ 
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ 
+ #define BCMSWAP16(val) \
+ 	((uint16)((((uint16)(val) & (uint16)0x00ffU) << 8) | \
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmutils.h /usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/bcmutils.h	2026-04-16 21:55:53.984658612 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h	2026-04-16 22:32:28.216303278 +0100
+@@ -59,7 +59,7 @@
+ 	unsigned int origsize;	
+ };
+ 
+-#include <osl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/osl.h"
+ 
+ #define GPIO_PIN_NOTDEFINED 	0x20	
+ 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/linux_osl.h /usr/src/broadcom-sta-6.30.223.271/src/include/linux_osl.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/linux_osl.h	2026-04-16 21:55:53.984761084 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/linux_osl.h	2026-04-16 22:32:28.215321398 +0100
+@@ -21,7 +21,7 @@
+ #ifndef _linux_osl_h_
+ #define _linux_osl_h_
+ 
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ 
+ extern void * osl_os_open_image(char * filename);
+ extern int osl_os_get_image_block(char * buf, int len, void * image);
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/osl.h /usr/src/broadcom-sta-6.30.223.271/src/include/osl.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/osl.h	2026-04-16 21:55:53.984824504 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/osl.h	2026-04-16 22:32:28.216483683 +0100
+@@ -76,7 +76,7 @@
+ MAKE_PREFETCH_RANGE_FN(PREF_STORE_RETAINED)
+ #endif 
+ 
+-#include <linux_osl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/linux_osl.h"
+ 
+ #ifndef PKTDBG_TRACE
+ #define PKTDBG_TRACE(osh, pkt, bit)
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/packed_section_end.h /usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/packed_section_end.h	2026-04-16 21:55:53.984850060 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h	2026-04-16 22:32:28.216647014 +0100
+@@ -6,13 +6,13 @@
+  * Declaring packed structures is compiler specific. In order to handle all
+  * cases, packed structures should be delared as:
+  *
+- * #include <packed_section_start.h>
++ * #include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+  *
+  * typedef BWL_PRE_PACKED_STRUCT struct foobar_t {
+  *    some_struct_members;
+  * } BWL_POST_PACKED_STRUCT foobar_t;
+  *
+- * #include <packed_section_end.h>
++ * #include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+  *
+  *
+  * Copyright (C) 2015, Broadcom Corporation. All Rights Reserved.
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/packed_section_start.h /usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/packed_section_start.h	2026-04-16 21:55:53.984875806 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h	2026-04-16 22:32:28.216122685 +0100
+@@ -6,13 +6,13 @@
+  * Declaring packed structures is compiler specific. In order to handle all
+  * cases, packed structures should be delared as:
+  *
+- * #include <packed_section_start.h>
++ * #include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+  *
+  * typedef BWL_PRE_PACKED_STRUCT struct foobar_t {
+  *    some_struct_members;
+  * } BWL_POST_PACKED_STRUCT foobar_t;
+  *
+- * #include <packed_section_end.h>
++ * #include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+  *
+  *
+  * Copyright (C) 2015, Broadcom Corporation. All Rights Reserved.
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/siutils.h /usr/src/broadcom-sta-6.30.223.271/src/include/siutils.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/siutils.h	2026-04-16 21:55:53.984927180 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/siutils.h	2026-04-16 22:32:28.215180900 +0100
+@@ -22,7 +22,7 @@
+ #ifndef	_siutils_h_
+ #define	_siutils_h_
+ 
+-#include <bcmutils.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h"
+ 
+ struct si_pub {
+ 	uint	socitype;		
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/typedefs.h /usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/typedefs.h	2026-04-16 21:55:53.984959642 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h	2026-04-16 22:32:28.215960995 +0100
+@@ -213,5 +213,5 @@
+ 
+ #define DISCARD_QUAL(ptr, type) ((type *)(uintptr)(ptr))
+ 
+-#include <bcmdefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmdefs.h"
+ #endif 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/include/wlioctl.h /usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/include/wlioctl.h	2026-04-16 21:55:53.984985953 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h	2026-04-16 23:50:17.069355114 +0100
+@@ -24,17 +24,17 @@
+ #ifndef _wlioctl_h_
+ #define	_wlioctl_h_
+ 
+-#include <typedefs.h>
+-#include <proto/ethernet.h>
+-#include <proto/bcmeth.h>
+-#include <proto/bcmip.h>
+-#include <proto/bcmevent.h>
+-#include <proto/802.11.h>
+-#include <bcmwifi_channels.h>
+-#include <bcmwifi_rates.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmeth.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmip.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmevent.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.11.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/shared/bcmwifi/include/bcmwifi_channels.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/shared/bcmwifi/include/bcmwifi_rates.h"
+ 
+ #define BWL_DEFAULT_PACKING
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+ #define	WL_BSS_INFO_VERSION	109		
+ 
+@@ -278,7 +278,7 @@
+ 
+ struct maclist {
+ 	uint count;			
+-	struct ether_addr ea[1];	
++	struct ether_addr ea[];	
+ };
+ 
+ typedef struct wl_ioctl {
+@@ -1096,11 +1096,11 @@
+ 	uint8 phytype;
+ } BWL_POST_PACKED_STRUCT nbr_element_t;
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+-#include <packed_section_start.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_start.h"
+ 
+-#include <packed_section_end.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/packed_section_end.h"
+ 
+ typedef struct bcnreq {
+ 	uint8 bcn_mode;
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/shared/linux_osl.c /usr/src/broadcom-sta-6.30.223.271/src/shared/linux_osl.c
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/shared/linux_osl.c	2026-04-16 21:55:53.985409821 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/shared/linux_osl.c	2026-04-16 22:32:28.216875794 +0100
+@@ -20,14 +20,14 @@
+ 
+ #define LINUX_PORT
+ 
+-#include <typedefs.h>
+-#include <bcmendian.h>
+-#include <linuxver.h>
+-#include <bcmdefs.h>
+-#include <osl.h>
+-#include <bcmutils.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/linuxver.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmdefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/osl.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h"
+ #include <linux/delay.h>
+-#include <pcicfg.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/pcicfg.h"
+ 
+ #include <linux/fs.h>
+ 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_cfg80211_hybrid.c /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.c
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_cfg80211_hybrid.c	2026-04-16 21:55:53.985601143 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.c	2026-04-17 01:17:29.954521889 +0100
+@@ -22,9 +22,9 @@
+ #if defined(USE_CFG80211)
+ 
+ #define LINUX_PORT
+-#include <typedefs.h>
+-#include <linuxver.h>
+-#include <osl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/linuxver.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/osl.h"
+ 
+ #include <linux/kernel.h>
+ #include <linux/kthread.h>
+@@ -36,12 +36,12 @@
+ #include <net/cfg80211.h>
+ #include <linux/nl80211.h>
+ #include <net/rtnetlink.h>
+-#include <bcmutils.h>
+-#include <bcmendian.h>
+-#include <wlioctl.h>
+-#include <proto/802.11.h>
+-#include <wl_cfg80211_hybrid.h>
+-#include <wl_linux.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.11.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.h"
+ 
+ #define EVENT_TYPE(e) dtoh32((e)->event_type)
+ #define EVENT_FLAGS(e) dtoh16((e)->flags)
+@@ -67,7 +67,11 @@
+ static s32 wl_cfg80211_scan(struct wiphy *wiphy, struct net_device *ndev,
+            struct cfg80211_scan_request *request);
+ #endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int wl_cfg80211_set_wiphy_params(struct wiphy *wiphy, int radio_idx, u32 changed);
++#else
+ static s32 wl_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed);
++#endif
+ static s32 wl_cfg80211_join_ibss(struct wiphy *wiphy, struct net_device *dev,
+            struct cfg80211_ibss_params *params);
+ static s32 wl_cfg80211_leave_ibss(struct wiphy *wiphy, struct net_device *dev);
+@@ -86,7 +90,9 @@
+            struct cfg80211_connect_params *sme);
+ static s32 wl_cfg80211_disconnect(struct wiphy *wiphy, struct net_device *dev, u16 reason_code);
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int wl_cfg80211_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, int radio_idx, enum nl80211_tx_power_setting type, int mbm);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+ static s32
+ wl_cfg80211_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
+                          enum nl80211_tx_power_setting type, s32 mbm);
+@@ -98,7 +104,9 @@
+            enum tx_power_setting type, s32 mbm);
+ #endif
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, int radio_idx, unsigned int link_id, int *dbm);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
+ static s32 wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, u32 /*link_id*/, s32 *dbm);
+ #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+ static s32 wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, s32 *dbm);
+@@ -659,7 +667,11 @@
+ 	return err;
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int wl_cfg80211_set_wiphy_params(struct wiphy *wiphy, int radio_idx, u32 changed)
++#else
+ static s32 wl_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
++#endif
+ {
+ 	struct wl_cfg80211_priv *wl = wiphy_to_wl(wiphy);
+ 	struct net_device *ndev = wl_to_ndev(wl);
+@@ -806,7 +818,7 @@
+ 		break;
+ 	case NL80211_AUTHTYPE_NETWORK_EAP:
+ 		WL_DBG(("network eap\n"));
+-        /* falls through */
++		fallthrough;
+ 	default:
+ 		val = 2;
+ 		WL_ERR(("invalid auth type (%d)\n", sme->auth_type));
+@@ -1095,7 +1107,11 @@
+ 	return err;
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int
++wl_cfg80211_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
++                         int radio_idx, enum nl80211_tx_power_setting type, int mbm)
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+ static s32
+ wl_cfg80211_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
+                          enum nl80211_tx_power_setting type, s32 mbm)
+@@ -1156,7 +1172,9 @@
+ 	return err;
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++static int wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, int radio_idx, unsigned int link_id, int *dbm)
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
+ static s32 wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, u32 /*link_id*/, s32 *dbm)
+ #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+ static s32 wl_cfg80211_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev, s32 *dbm)
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_cfg80211_hybrid.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_cfg80211_hybrid.h	2026-04-16 21:55:53.985680971 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.h	2026-04-16 22:32:28.213220489 +0100
+@@ -23,7 +23,7 @@
+ #define _wl_cfg80211_h_
+ 
+ #include <net/cfg80211.h>
+-#include <wlioctl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h"
+ 
+ struct wl_cfg80211_conf;
+ struct wl_cfg80211_priv;
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_key.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_key.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_key.h	2026-04-16 21:55:53.985969828 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_key.h	2026-04-16 22:32:28.213119548 +0100
+@@ -23,7 +23,7 @@
+ #ifndef _wlc_key_h_
+ #define _wlc_key_h_
+ 
+-#include <bcmcrypto/tkhash.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmcrypto/tkhash.h"
+ 
+ typedef struct tkip_info {
+ 	uint16		phase1[TKHASH_P1_KEY_SIZE/sizeof(uint16)];	
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_pub.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_pub.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_pub.h	2026-04-16 21:55:53.985995214 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_pub.h	2026-04-16 22:32:28.214108328 +0100
+@@ -22,11 +22,11 @@
+ #ifndef _wlc_pub_h_
+ #define _wlc_pub_h_
+ 
+-#include <wlc_types.h>
+-#include <wlc_utils.h>
+-#include <siutils.h>
+-#include "proto/802.11.h"
+-#include "proto/bcmevent.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_types.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_utils.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/siutils.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.11.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/bcmevent.h"
+ 
+ #define	MAX_TIMERS	(34 + WLC_MAXMFPS + WLC_MAXDLS_TIMERS + (2 * WLC_MAXDPT))
+ 
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_utils.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_utils.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wlc_utils.h	2026-04-16 21:55:53.986057804 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_utils.h	2026-04-16 22:32:28.212946797 +0100
+@@ -21,7 +21,7 @@
+ #ifndef _wlc_utils_h_
+ #define _wlc_utils_h_
+ 
+-#include <typedefs.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
+ 
+ struct rsn_parms {
+ 	uint8 flags;        
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_iw.c /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.c
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_iw.c	2026-04-16 21:55:53.985769446 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.c	2026-04-16 22:32:28.214599900 +0100
+@@ -21,23 +21,23 @@
+ #if defined(USE_IW)
+ #define LINUX_PORT
+ 
+-#include <typedefs.h>
+-#include <linuxver.h>
+-#include <osl.h>
+-
+-#include <bcmutils.h>
+-#include <bcmendian.h>
+-#include <proto/ethernet.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/linuxver.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/osl.h"
++
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
+ 
+ #include <linux/if_arp.h>
+ #include <asm/uaccess.h>
+ 
+ typedef const struct si_pub	si_t;
+-#include <wlioctl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h"
+ 
+-#include <wl_dbg.h>
+-#include <wl_iw.h>
+-#include <wl_linux.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_dbg.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.h"
+ 
+ extern bool wl_iw_conn_status_str(uint32 event_type, uint32 status,
+ 	uint32 reason, char* stringBuf, uint buflen);
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_iw.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_iw.h	2026-04-16 21:55:53.985823186 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.h	2026-04-16 22:32:28.212112573 +0100
+@@ -23,9 +23,9 @@
+ 
+ #include <linux/wireless.h>
+ 
+-#include <typedefs.h>
+-#include <proto/ethernet.h>
+-#include <wlioctl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h"
+ 
+ #define WL_SCAN_PARAMS_SSID_MAX 	10
+ #define GET_SSID			"SSID="
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_linux.c /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.c
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_linux.c	2026-04-16 21:55:53.985851536 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.c	2026-04-16 23:43:02.869977696 +0100
+@@ -23,9 +23,9 @@
+ 
+ #define __UNDEF_NO_VERSION__
+ 
+-#include <typedefs.h>
+-#include <linuxver.h>
+-#include <osl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/typedefs.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/linuxver.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/osl.h"
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
+ #include <linux/module.h>
+ #endif
+@@ -62,40 +62,40 @@
+ #include <asm/unaligned.h>
+ #endif
+ 
+-#include <proto/802.1d.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/802.1d.h"
+ 
+-#include <epivers.h>
+-#include <bcmendian.h>
+-#include <proto/ethernet.h>
+-#include <bcmutils.h>
+-#include <pcicfg.h>
+-#include <wlioctl.h>
+-#include <wlc_key.h>
+-#include <siutils.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/epivers.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmendian.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ethernet.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmutils.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/pcicfg.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/wlioctl.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_key.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/siutils.h"
+ 
+ #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 4, 5)
+ #error "No support for Kernel Rev <= 2.4.5, As the older kernel revs doesn't support Tasklets"
+ #endif
+ 
+-#include <wlc_pub.h>
+-#include <wl_dbg.h>
+-#include <wlc_ethereal.h>
+-#include <proto/ieee80211_radiotap.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_pub.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_dbg.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_ethereal.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/common/include/proto/ieee80211_radiotap.h"
+ 
+-#include <wl_iw.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.h"
+ #ifdef USE_IW
+ struct iw_statistics *wl_get_wireless_stats(struct net_device *dev);
+ #endif
+ 
+-#include <wl_export.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_export.h"
+ 
+-#include <wl_linux.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.h"
+ 
+ #if defined(USE_CFG80211)
+-#include <wl_cfg80211_hybrid.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_cfg80211_hybrid.h"
+ #endif 
+ 
+-#include <wlc_wowl.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_wowl.h"
+ 
+ static void wl_timer(
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+@@ -160,6 +160,11 @@
+ 
+ #if defined(WL_CONFIG_RFKILL)
+ #include <linux/rfkill.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++#define timer_field ktimerd
++#else
++#define timer_field timer
++#endif
+ static int wl_init_rfkill(wl_info_t *wl);
+ static void wl_uninit_rfkill(wl_info_t *wl);
+ static int wl_set_radio_block(void *data, bool blocked);
+@@ -167,6 +172,7 @@
+ #endif
+ 
+ MODULE_LICENSE("MIXED/Proprietary");
++MODULE_DESCRIPTION("Broadcom BCM43xx wireless driver");
+ 
+ static struct pci_device_id wl_id_table[] =
+ {
+@@ -1936,7 +1942,8 @@
+ 				i = 0;
+ 				break;
+ 			}
+-			bcopy(ha->addr, &maclist->ea[i++], ETHER_ADDR_LEN);
++			bcopy(ha->addr, &maclist->ea[i], ETHER_ADDR_LEN);
++			i++;
+ 		}
+ #endif 
+ 		maclist->count = i;
+@@ -2369,7 +2376,9 @@
+ #endif
+ ) {
+ 	wl_timer_t *t =
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
++		timer_container_of(t, tl, timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ 		from_timer(t, tl, timer);
+ #else
+ 		(wl_timer_t *)data;
+@@ -2475,7 +2484,7 @@
+ 	ASSERT(t);
+ 	if (t->set) {
+ 		t->set = FALSE;
+-		if (!del_timer(&t->timer)) {
++		if (!timer_delete(&t->timer)) {
+ #ifdef BCMDBG
+ 			WL_INFORM(("wl%d: Failed to delete timer %s\n", wl->unit, t->name));
+ #endif
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_linux.h /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/src/wl/sys/wl_linux.h	2026-04-16 21:55:53.985913240 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_linux.h	2026-04-17 01:09:00.069147090 +0100
+@@ -21,8 +21,9 @@
+ #ifndef _wl_linux_h_
+ #define _wl_linux_h_
+ 
+-#include <wlc_types.h>
+-#include <wlc_pub.h>
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_types.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wlc_pub.h"
++#include "/usr/src/broadcom-sta-6.30.223.271/src/wl/sys/wl_iw.h"
+ 
+ typedef struct wl_timer {
+ 	struct timer_list 	timer;
+diff -ruN /usr/src/broadcom-sta-6.30.223.271.bak/typedefs.h /usr/src/broadcom-sta-6.30.223.271/typedefs.h
+--- /usr/src/broadcom-sta-6.30.223.271.bak/typedefs.h	1970-01-01 01:00:00.000000000 +0100
++++ /usr/src/broadcom-sta-6.30.223.271/typedefs.h	2026-04-16 22:32:28.211818141 +0100
+@@ -0,0 +1,217 @@
++/*
++ * Copyright (C) 2015, Broadcom Corporation. All Rights Reserved.
++ * 
++ * Permission to use, copy, modify, and/or distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ * 
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
++ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
++ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
++ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ * $Id: typedefs.h 382996 2013-02-05 06:55:24Z $
++ */
++
++#ifndef _TYPEDEFS_H_
++#define _TYPEDEFS_H_
++
++#if defined(__x86_64__)
++#define TYPEDEF_UINTPTR
++typedef unsigned long long int uintptr;
++#endif
++
++#if defined(__sparc__)
++#define TYPEDEF_ULONG
++#endif
++
++#if defined(LINUX_PORT)
++#define TYPEDEF_UINT
++#define TYPEDEF_USHORT
++#define TYPEDEF_ULONG
++#ifdef __KERNEL__
++#include <linux/version.h>
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19))
++#define TYPEDEF_BOOL
++#endif	
++
++#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 18))
++#include <linux/compiler.h>
++#endif	
++#endif	
++#endif  
++
++#if defined(__GNUC__) && defined(__STRICT_ANSI__)
++#define TYPEDEF_INT64
++#define TYPEDEF_UINT64
++#endif
++
++#if !defined(__BOB__)
++
++#if defined(__KERNEL__)
++
++#if defined(LINUX_PORT)
++#include <linux/types.h>	
++#endif 
++
++#else
++
++#include <sys/types.h>
++
++#endif 
++
++#endif 
++
++#define USE_TYPEDEF_DEFAULTS
++
++#ifdef USE_TYPEDEF_DEFAULTS
++#undef USE_TYPEDEF_DEFAULTS
++
++#ifndef TYPEDEF_BOOL
++typedef	 unsigned char	bool;
++#endif
++
++#ifndef TYPEDEF_UCHAR
++typedef unsigned char	uchar;
++#endif
++
++#ifndef TYPEDEF_USHORT
++typedef unsigned short	ushort;
++#endif
++
++#ifndef TYPEDEF_UINT
++typedef unsigned int	uint;
++#endif
++
++#ifndef TYPEDEF_ULONG
++typedef unsigned long	ulong;
++#endif
++
++#ifndef TYPEDEF_UINT8
++typedef unsigned char	uint8;
++#endif
++
++#ifndef TYPEDEF_UINT16
++typedef unsigned short	uint16;
++#endif
++
++#ifndef TYPEDEF_UINT32
++typedef unsigned int	uint32;
++#endif
++
++#ifndef TYPEDEF_UINT64
++typedef unsigned long long uint64;
++#endif
++
++#ifndef TYPEDEF_UINTPTR
++typedef unsigned int	uintptr;
++#endif
++
++#ifndef TYPEDEF_INT8
++typedef signed char	int8;
++#endif
++
++#ifndef TYPEDEF_INT16
++typedef signed short	int16;
++#endif
++
++#ifndef TYPEDEF_INT32
++typedef signed int	int32;
++#endif
++
++#ifndef TYPEDEF_INT64
++typedef signed long long int64;
++#endif
++
++#ifndef TYPEDEF_FLOAT32
++typedef float		float32;
++#endif
++
++#ifndef TYPEDEF_FLOAT64
++typedef double		float64;
++#endif
++
++#ifndef TYPEDEF_FLOAT_T
++
++#if defined(FLOAT32)
++typedef float32 float_t;
++#else 
++typedef float64 float_t;
++#endif
++
++#endif 
++
++#ifndef FALSE
++#define FALSE	0
++#endif
++
++#ifndef TRUE
++#define TRUE	1  
++#endif
++
++#ifndef NULL
++#define	NULL	0
++#endif
++
++#ifndef OFF
++#define	OFF	0
++#endif
++
++#ifndef ON
++#define	ON	1  
++#endif
++
++#define	AUTO	(-1) 
++
++#ifndef PTRSZ
++#define	PTRSZ	sizeof(char*)
++#endif
++
++#if defined(__GNUC__) || defined(__lint)
++	#define BWL_COMPILER_GNU
++#elif defined(__CC_ARM) && __CC_ARM
++	#define BWL_COMPILER_ARMCC
++#else
++	#error "Unknown compiler!"
++#endif 
++
++#ifndef INLINE
++	#if defined(BWL_COMPILER_MICROSOFT)
++		#define INLINE __inline
++	#elif defined(BWL_COMPILER_GNU)
++		#define INLINE __inline__
++	#elif defined(BWL_COMPILER_ARMCC)
++		#define INLINE	__inline
++	#else
++		#define INLINE
++	#endif 
++#endif 
++
++#undef TYPEDEF_BOOL
++#undef TYPEDEF_UCHAR
++#undef TYPEDEF_USHORT
++#undef TYPEDEF_UINT
++#undef TYPEDEF_ULONG
++#undef TYPEDEF_UINT8
++#undef TYPEDEF_UINT16
++#undef TYPEDEF_UINT32
++#undef TYPEDEF_UINT64
++#undef TYPEDEF_UINTPTR
++#undef TYPEDEF_INT8
++#undef TYPEDEF_INT16
++#undef TYPEDEF_INT32
++#undef TYPEDEF_INT64
++#undef TYPEDEF_FLOAT32
++#undef TYPEDEF_FLOAT64
++#undef TYPEDEF_FLOAT_T
++
++#endif 
++
++#define UNUSED_PARAMETER(x) (void)(x)
++
++#define DISCARD_QUAL(ptr, type) ((type *)(uintptr)(ptr))
++
++#include "/usr/src/broadcom-sta-6.30.223.271/src/include/bcmdefs.h"
++#endif 
