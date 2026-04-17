@@ -1,6 +1,8 @@
 # broadcom-sta-6.30.223.271-kernel617-patch
 
 Created with help from Claude AI - Sonnet 4.6
+
+
 A community patch to make the `broadcom-sta` (wl) wireless driver version 6.30.223.271 build and work correctly on Linux kernel 6.17+.
 
 **Tested on:** Linux Mint 22.3 / Ubuntu 24.04 Noble, kernel 6.17.0-20-generic, MacBook Pro 11,1 (BCM4360)
